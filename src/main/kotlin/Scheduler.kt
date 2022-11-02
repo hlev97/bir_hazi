@@ -116,6 +116,8 @@ sealed class Scheduler(
                 println("t[${tick.toFloat() / 10}]: IDLE")
                 processorFreeTime++
                 tick++
+                tasks.filter { !it.isDone && it.s < tick }
+                    .forEach { it.responseTime++ }
                 scheduleTask(null, tick)
             }
         }
