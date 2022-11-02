@@ -15,6 +15,10 @@ sealed class Scheduler(
     val isThereTaskWithHigherPriority: (tasks: List<PeriodicTask>, currentTask: PeriodicTask, tick: Int) -> Boolean,
 ) {
 
+    private var processorFreeTime = 0
+    private var responseTimes: HashMap<String,Float> = hashMapOf()
+    private var processorFreeTimePeriods: MutableSet<ProcessorFreeTimePeriod> = mutableSetOf()
+    private var currentProcessorFreeTimePeriod: ProcessorFreeTimePeriod? = null
 
     fun schedule() {
         val tick = 0
@@ -22,8 +26,17 @@ sealed class Scheduler(
         createPriorityOrder(tasks, tick)
         val index = tasks.indexOf(priorityOrder.first())
         val currentTask = tasks[index]
-        println("current task is ${currentTask.name}")
         scheduleTask(currentTask, tick)
+        println()
+        responseTimes.forEach { (task, responseTime) ->
+            println("$task's reponse time: $responseTime ms")
+        }
+        println("processor free time: ${"%.1f".format(processorFreeTimePeriods.sumOf { it.duration.toDouble() })} ms")
+        println("processor free time periods (${processorFreeTimePeriods.size} db): ")
+        println("start:end:duration")
+        processorFreeTimePeriods.forEach {
+            println("${it.start}:${it.end}:${"%.1f".format(it.duration)}")
+        }
     }
 
     private tailrec fun scheduleTask(_currentTask: PeriodicTask?, _tick: Int) {
@@ -48,7 +61,13 @@ sealed class Scheduler(
 
                 println("t[${tick.toFloat() / 10}]: ${currentTask.name}")
 
-                tick += currentTask.step(tick,tasks)
+                tick += currentTask.step(
+                    tick,
+                    tasks,
+                    addToResponseTimes = { key, value ->
+                        responseTimes[key] = value
+                    }
+                )
                 tasks.filter { it != currentTask && !it.isDone && it.s < tick }
                     .forEach { it.responseTime++ }
 
@@ -73,6 +92,8 @@ sealed class Scheduler(
                         scheduleTask(currentTask, tick)
                     } else {
                         println("t[${tick.toFloat() / 10}]: IDLE")
+                        currentProcessorFreeTimePeriod = ProcessorFreeTimePeriod(start = tick.toFloat()/10)
+                        processorFreeTime++
                         scheduleTask(null, tick)
                     }
                 } else {
@@ -81,12 +102,19 @@ sealed class Scheduler(
             }
         } else {
             if (isPeriod(tasks, currentTask, tick)) {
+                with(currentProcessorFreeTimePeriod) {
+                    this?.end = tick.toFloat() / 10
+                    this?.countDuration()
+                }
+                processorFreeTimePeriods.add(currentProcessorFreeTimePeriod!!)
+                currentProcessorFreeTimePeriod = null
                 createPriorityOrder(tasks, tick)
                 val index = tasks.indexOf(priorityOrder.first())
                 currentTask = tasks[index]
                 scheduleTask(currentTask, tick)
             } else {
                 println("t[${tick.toFloat() / 10}]: IDLE")
+                processorFreeTime++
                 tick++
                 scheduleTask(null, tick)
             }

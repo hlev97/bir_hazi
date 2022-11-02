@@ -21,7 +21,6 @@ sealed class Server(
 
     fun schedule() {
         val tick = 0
-        println("Create priority order")
         createPriorityOrder(tasks,tick)
         val index = tasks.indexOf(priorityOrder.first())
         val currentTask = tasks[index]
@@ -51,7 +50,13 @@ sealed class Server(
 
                 println("t[${tick.toFloat()/10}]: ${currentTask.name}")
 
-                tick += currentTask.step(tick,tasks)
+                tick += currentTask.step(
+                    tick,
+                    tasks,
+                    addToResponseTimes = { key, value ->
+
+                    }
+                )
                 tasks.filter { it != currentTask && !it.isDone && it.s < tick }
                     .forEach { it.responseTime++ }
 

@@ -13,7 +13,7 @@ abstract class Task(
         protected set
 
 
-    abstract fun step(tick: Int, tasks: List<Task>): Int
+    abstract fun step(tick: Int, tasks: List<Task>, addToResponseTimes: (String,Float) -> Unit): Int
 }
 
 class PeriodicTask(
@@ -25,7 +25,7 @@ class PeriodicTask(
     val T: Int,
 ): Task(name,C,s0,schedulable) {
 
-    override fun step(tick: Int, tasks: List<Task>): Int {
+    override fun step(tick: Int, tasks: List<Task>, addToResponseTimes: (String,Float) -> Unit): Int {
         if (tick % T == 0) {
             s = T
             timeLeft = C
@@ -38,6 +38,7 @@ class PeriodicTask(
             responseTime += 1
             if (isDone) {
                 responseTime = 0
+                addToResponseTimes(name,responseTime.toFloat()/10)
             }
         }
 
@@ -59,13 +60,14 @@ class AperiodicTask(
     schedulable: Boolean = false,
 ): Task(name,C,s0,schedulable) {
 
-    override fun step(tick: Int, tasks: List<Task>): Int {
+    override fun step(tick: Int, tasks: List<Task>, addToResponseTimes: (String,Float) -> Unit): Int {
         if (timeLeft > 0) {
             timeLeft -= 1
             isDone = timeLeft == 0
             responseTime += 1
             if (isDone) {
                 responseTime = 0
+                addToResponseTimes(name,responseTime.toFloat()/10)
             }
         }
         return 1
