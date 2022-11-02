@@ -37,8 +37,8 @@ class PeriodicTask(
             isDone = timeLeft == 0
             responseTime += 1
             if (isDone) {
-                responseTime = 0
                 addToResponseTimes(name,responseTime.toFloat()/10)
+                responseTime = 0
             }
         }
 
@@ -66,8 +66,8 @@ class AperiodicTask(
             isDone = timeLeft == 0
             responseTime += 1
             if (isDone) {
-                responseTime = 0
                 addToResponseTimes(name,responseTime.toFloat()/10)
+                responseTime = 0
             }
         }
         return 1
